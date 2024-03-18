@@ -102,7 +102,7 @@ pipeline {
                         sh "ssh ab@host.docker.internal 'mkdir ${PROJECT_DIR}/backenddocs/docs'"
                         sh "scp -rp temp_backend/* ab@host.docker.internal:${PROJECT_DIR}/backenddocs"
                         // Generate the documentation on the Docker host, specifying the output within the same 'backenddocs' directory or a subdirectory of it for the generated docs
-                        sh "ssh ab@host.docker.internal 'cd ${PROJECT_DIR}/backenddocs && npx jsdoc -c jsdoc.json -r . -d ./docs'"
+                        sh "ssh ab@host.docker.internal 'cd ${PROJECT_DIR}/backenddocs && jsdoc -c jsdoc.json -r . -d ./docs'"
                         // Optionally, if you need to archive the generated documentation in Jenkins, copy it back from the Docker host
                         sh "scp -rp ab@host.docker.internal:${PROJECT_DIR}/backenddocs/docs ./docs-backend"
                     }
