@@ -77,7 +77,7 @@ pipeline {
                     unstash 'backend-src'
                     dir('backend') {
                         // Assuming the build commands are here [ @Chandan verify this]
-                        sh 'cp ${WORKSPACE}/.env .'
+                    //    sh 'cp ${WORKSPACE}/.env .'
                         sh 'npm install'
                         // Stash the build artifacts, excluding the node_modules directory
                         stash excludes: 'node_modules/**', includes: '**', name: 'build-artifactsb'
