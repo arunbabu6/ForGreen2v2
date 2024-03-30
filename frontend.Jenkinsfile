@@ -280,7 +280,7 @@ pipeline {
                 mkdir -p ${newWorkspaceDir} && \\
                 rm -rf ${newWorkspaceDir}/* && \\
                 cp -r /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main/* ${newWorkspaceDir}/
-                cp /opt/docker-green/Stackhawk/StackHawk.yml ${newWorkspaceDir}/'
+                cp /opt/docker-green/Stackhawk/stackhawk.yml ${newWorkspaceDir}/'
 
                 """
                 // Step 2.1: Delete existing custom StackHawk Docker image
