@@ -265,8 +265,8 @@ pipeline {
                 }
             }
         }
-    }
     
+
     stage('StackHawk Scan') {
         agent any
         steps {
@@ -290,6 +290,7 @@ pipeline {
             }
         }
     }
+    }
 
     post {
         always {
@@ -305,5 +306,3 @@ pipeline {
         }
     }
 }
-
-
