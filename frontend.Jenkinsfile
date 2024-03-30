@@ -178,7 +178,7 @@ pipeline {
                     }
             }
         }
-
+    
         stage('Trivy Vulnerability Scan') {
             agent any
             steps {
@@ -266,37 +266,41 @@ pipeline {
             }
         }
     
+    
 
         stage('Setup StackHawk Scan') {
             steps {
                 script {
-                    // SSH into the Docker host to build the custom StackHawk Docker image
-                    sshagent(['jenkinaccess']) {
-                    sh """
-                    ssh -o StrictHostKeyChecking=no ab@host.docker.internal \\
-                    'cd /opt/docker-green/Stackhawk && \\
-                    docker build -f stackhawk.Dockerfile -t stackhawk-custom:latest .'
-                    """
-                    }
+            // SSH into the Docker host to build the custom StackHawk Docker image
+            sshagent(['jenkinaccess']) {
+                sh """
+                ssh -o StrictHostKeyChecking=no ab@host.docker.internal \\
+                'cd /opt/docker-green/Stackhawk && \\
+                docker build -f stackhawk.Dockerfile -t stackhawk-custom:latest .'
+                """
+            }
 
-                    // Define a unique container name to avoid conflicts
-                    def containerName = "stackhawk_scan_${BUILD_NUMBER}"
+            // Define a unique container name to avoid conflicts
+            def containerName = "stackhawk_scan_${BUILD_NUMBER}"
 
-                    // SSH into the Docker host to run the StackHawk scan
-                    sshagent(['jenkinaccess']) {
-                        sh """
-                        ssh -o StrictHostKeyChecking=no ab@host.docker.internal \\
-                        'docker rm -f ${containerName} || true && \\
-                        docker run --rm --name ${containerName} \\
-                        -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \\
-                        -e HOST=\\"${env.STACKHAWK_HOST}\\" \\
-                        -e ENVIRONMENT=\\"${env.STACKHAWK_ENV}\\" \\
-                        stackhawk-custom:latest'
-                        """
-                    }
-                }
+            // Adjusted volume mapping for WSL and Jenkins running in Docker
+            def volumeMapping = "/home/ab/jenkins/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw"
+
+            // SSH into the Docker host to run the StackHawk scan with adjusted volume mapping
+            sshagent(['jenkinaccess']) {
+                sh """
+                ssh -o StrictHostKeyChecking=no ab@host.docker.internal \\
+                'docker rm -f ${containerName} || true && \\
+                docker run --rm --name ${containerName} \\
+                -v ${volumeMapping} \\
+                -e HOST=\\"${env.STACKHAWK_HOST}\\" \\
+                -e ENVIRONMENT=\\"${env.STACKHAWK_ENV}\\" \\
+                stackhawk-custom:latest'
+                """
             }
         }
+    }
+}
     }
 
     post {
@@ -313,5 +317,3 @@ pipeline {
         }
     }
 }
-
-
