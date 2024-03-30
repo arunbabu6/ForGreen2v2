@@ -285,7 +285,7 @@ pipeline {
                     // SSH into the Docker host to run the StackHawk scan
                     sshagent(['jenkinaccess']) {
                         sh """
-                        ssh -o StrictHostKeyChecking=no ab@Staging-host.docker.internal \\
+                        ssh -o StrictHostKeyChecking=no ab@host.docker.internal \\
                         'docker rm -f ${containerName} || true && \\
                         docker run --rm --name ${containerName} \\
                         -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \\
