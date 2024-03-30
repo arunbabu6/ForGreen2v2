@@ -267,34 +267,40 @@ pipeline {
         }
     
 
-    stage('StackHawk Scan') {
-    agent any
-    steps {
-        script {
-            // Using sshagent for SSH key-based authentication
-            sshagent(['jenkinaccess']) { 
-                // Retrieve credentials directly into variables
-                withCredentials([string(credentialsId: 'STACKHAWK_API_KEY', variable: 'API_KEY'),
-                                 string(credentialsId: 'STACKHAWK_APP_ID', variable: 'APP_ID')]) {
-                    // Define the command to run on the Docker host
-                    def command = """
-                    docker run --rm \\
-                    -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \\
-                    -e API_KEY='${API_KEY}' \\
-                    -e HOST='${env.STACKHAWK_HOST}' \\
-                    -e APP_ID='${APP_ID}' \\
-                    -e ENVIRONMENT='${env.STACKHAWK_ENV}' \\
-                    stackhawk/hawkscan:latest
-                    """
+        stage('StackHawk Scan') {
+            agent any
+            steps {
+                script {
+                    // Use sshagent for SSH operations
+                    sshagent(['jenkinaccess']) {
+                    // Retrieve sensitive credentials securely and set non-sensitive environment variables
+                    withCredentials([
+                        string(credentialsId: 'STACKHAWK_API_KEY', variable: 'API_KEY'),
+                        string(credentialsId: 'STACKHAWK_APP_ID', variable: 'APP_ID')
+                    ]) {
+                    // Prepare the command to execute within the SSH session
+                        def command = """
+                        export API_KEY='${API_KEY}' &&
+                        export APP_ID='${APP_ID}' &&
+                        export HOST='${env.STACKHAWK_HOST}' &&
+                        export ENVIRONMENT='${env.STACKHAWK_ENV}' &&
+                        docker run --rm \\
+                        -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \\
+                        -e API_KEY=\\\$API_KEY \\
+                        -e HOST=\\\$HOST \\
+                        -e APP_ID=\\\$APP_ID \\
+                        -e ENVIRONMENT=\\\$ENVIRONMENT \\
+                        stackhawk/hawkscan:latest
+                        """
 
-                    // Execute the command within the SSH session
-                    sh "ssh -o StrictHostKeyChecking=no ab@host.docker.internal '${command}'"
+                        // Execute the prepared command within the SSH session
+                        sh "ssh -o StrictHostKeyChecking=no ab@host.docker.internal '${command}'"
+                        }
+                    }
                 }
             }
         }
     }
-}
-}
 
     post {
         always {
