@@ -275,17 +275,18 @@ pipeline {
                 sshagent(['jenkinaccess']) { 
                     echo "Starting StackHawk scan for ${env.STACKHAWK_HOST}"
                 // Running StackHawk scan command on Docker host through SSH
-                    sh """
-                    ssh -o StrictHostKeyChecking=no ab@host.docker.internal '
-                        docker run --rm \\
-                        -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \\
-                        -e API_KEY=\"\${env.STACKHAWK_API_KEY}\" \\
-                        -e HOST=\"\${env.STACKHAWK_HOST}\" \\
-                        -e APP_ID=\"\${env.STACKHAWK_APP_ID}\" \\
-                        -e ENVIRONMENT=\"\${env.STACKHAWK_ENV}\" \\
-                        stackhawk/hawkscan:latest
-                    '
-                    """
+                sh """
+                ssh -o StrictHostKeyChecking=no ab@host.docker.internal '
+                    docker run --rm \\
+                    -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \\
+                    -e API_KEY=\"${env.STACKHAWK_API_KEY}\" \\
+                    -e HOST=\"${env.STACKHAWK_HOST}\" \\
+                    -e APP_ID=\"${env.STACKHAWK_APP_ID}\" \\
+                    -e ENVIRONMENT=\"${env.STACKHAWK_ENV}\" \\
+                    stackhawk/hawkscan:latest
+                '
+                """
+
                 }
             }
         }
@@ -306,3 +307,5 @@ pipeline {
         }
     }
 }
+
+
