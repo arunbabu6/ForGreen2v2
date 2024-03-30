@@ -281,8 +281,12 @@ pipeline {
                 rm -rf ${newWorkspaceDir}/* && \\
                 cp -r /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main/* ${newWorkspaceDir}/'
                 """
-
-                // Step 2: Build the custom StackHawk Docker image
+                // Step 2.1: Delete existing custom StackHawk Docker image
+                sh """
+                ssh -o StrictHostKeyChecking=no ab@host.docker.internal \\
+                'docker rmi -f stackhawk-custom:latest || true'
+                """
+                // Step 2.2: Build the custom StackHawk Docker image
                 sh """
                 ssh -o StrictHostKeyChecking=no ab@host.docker.internal \\
                 'cd /opt/docker-green/Stackhawk && \\
