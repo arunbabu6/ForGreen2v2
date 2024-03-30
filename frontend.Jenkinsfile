@@ -7,6 +7,8 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub1')
         // SSH credentials for each environment
         PROJECT_DIR = '/opt/docker-green'
+        STACKHAWK_APP_ID = credentials('id-for-applicationId-cred')
+        STACKHAWK_API_KEY = credentials('id-for-apiKey-cred')
     }
 
     stages {
@@ -18,7 +20,17 @@ pipeline {
                                   BRANCH_NAME == 'production' ? 'Production' :
                                   BRANCH_NAME == 'staging' ? 'Staging' :
                                   BRANCH_NAME.startsWith('test') ? 'Testing' : 'Development'
+                                // Dynamically set STACKHAWK_HOST based on branch name
+                    env.STACKHAWK_HOST = BRANCH_NAME == 'main' ? 'http://localhost:8090/' :
+                                         BRANCH_NAME == 'staging' ? 'https://staging.globalgreeninit.world' :
+                                         BRANCH_NAME == 'production' ? 'https://production.globalgreeninit.world' :
+                                         BRANCH_NAME == 'testing' ? 'https://testing.globalgreeninit.world' :
+                                 'https://dev.example.com'
+                    // Dynamically set STACKHAWK_ENV based on the ENVIRONMENT variable
+                    env.STACKHAWK_ENV = env.ENVIRONMENT             
                     echo "Environment set to ${env.ENVIRONMENT}"
+                    echo "StackHawk host set to ${env.STACKHAWK_HOST}"
+                    echo "StackHawk environment set to ${env.STACKHAWK_ENV}"
                 }
             }
         }
@@ -254,14 +266,38 @@ pipeline {
             }
         }
     }
+    stage('StackHawk Scan') {
+        agent any
+        steps {
+            script {
+                // Using sshagent to securely access the Docker host
+                sshagent(['jenkinaccess']) { 
+                    echo "Starting StackHawk scan for ${env.STACKHAWK_HOST}"
+                // Running StackHawk scan command on Docker host through SSH
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ab@host.docker.internal '
+                        docker run --rm \
+                        -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \
+                        -e API_KEY=${env.STACKHAWK_API_KEY} \
+                        -e HOST=${env.STACKHAWK_HOST} \
+                        -e APP_ID=${env.STACKHAWK_APP_ID} \
+                        -e ENVIRONMENT=${env.STACKHAWK_ENV} \
+                        stackhawk/hawkscan:latest
+                    '
+                    """
+                }
+            }
+        }
+    }
 
     post {
         always {
             script{
-                   
+                             
                 if (env.ENVIRONMENT) {
                     echo "Pipeline execution completed for ${env.ENVIRONMENT}"
-                } else {
+                } 
+                else {
                     echo "Pipeline execution completed, but ENVIRONMENT was not set."
                 }
             }
