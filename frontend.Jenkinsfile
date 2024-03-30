@@ -7,8 +7,8 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub1')
         // SSH credentials for each environment
         PROJECT_DIR = '/opt/docker-green'
-        STACKHAWK_APP_ID = credentials('id-for-applicationId-cred')
-        STACKHAWK_API_KEY = credentials('id-for-apiKey-cred')
+        STACKHAWK_APP_ID = credentials('STACKHAWK_APP_ID')
+        STACKHAWK_API_KEY = credentials('STACKHAWK_API_KEY')
     }
 
     stages {
