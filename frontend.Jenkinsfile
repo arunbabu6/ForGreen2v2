@@ -268,35 +268,33 @@ pipeline {
     
 
     stage('StackHawk Scan') {
-        agent any
-        steps {
-            script {
-                // Using sshagent to securely access the Docker host
-                sshagent(['jenkinaccess']) { 
-                    echo "Starting StackHawk scan for ${env.STACKHAWK_HOST}"
-                    // Define a script block to export variables and run the Docker command
-                    def scancommand = """
-                    export API_KEY='${env.STACKHAWK_API_KEY}' &&
-                    export HOST='${env.STACKHAWK_HOST}' &&
-                    export APP_ID='${env.STACKHAWK_APP_ID}' &&
-                    export ENVIRONMENT='${env.STACKHAWK_ENV}' &&
-                    docker run --rm \
-                    -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \
-                    -e API_KEY=\\$API_KEY \
-                    -e HOST=\\$HOST \
-                    -e APP_ID=\\$APP_ID \
-                    -e ENVIRONMENT=\\$ENVIRONMENT \
+    agent any
+    steps {
+        script {
+            // Using sshagent for SSH key-based authentication
+            sshagent(['jenkinaccess']) { 
+                // Retrieve credentials directly into variables
+                withCredentials([string(credentialsId: 'STACKHAWK_API_KEY', variable: 'API_KEY'),
+                                 string(credentialsId: 'STACKHAWK_APP_ID', variable: 'APP_ID')]) {
+                    // Define the command to run on the Docker host
+                    def command = """
+                    docker run --rm \\
+                    -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \\
+                    -e API_KEY='${API_KEY}' \\
+                    -e HOST='${env.STACKHAWK_HOST}' \\
+                    -e APP_ID='${APP_ID}' \\
+                    -e ENVIRONMENT='${env.STACKHAWK_ENV}' \\
                     stackhawk/hawkscan:latest
                     """
 
-                // Execute the script block within the SSH session
-                sh "ssh -o StrictHostKeyChecking=no ab@host.docker.internal '${scancommand}'"
-
+                    // Execute the command within the SSH session
+                    sh "ssh -o StrictHostKeyChecking=no ab@host.docker.internal '${command}'"
                 }
             }
         }
     }
-    }
+}
+}
 
     post {
         always {
@@ -312,5 +310,3 @@ pipeline {
         }
     }
 }
-
-
