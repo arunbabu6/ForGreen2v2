@@ -269,47 +269,39 @@ pipeline {
     
 
         stage('Setup StackHawk Scan') {
-    steps {
-        script {
-            // SSH into the Docker host
+            steps {
+                script {
+            // Determine the environment and select the corresponding Dockerfile
+            def dockerfilePath = "/opt/docker-green/Stackhawk/${env.BRANCH_NAME}.Dockerfile"
+            def environment = env.ENVIRONMENT // Assuming ENVIRONMENT is set correctly in a previous stage
+
             sshagent(['jenkinaccess']) {
-                // Step 1: Copy the workspace to a new directory on the Docker host
+                // Copy the workspace to a new directory on the Docker host
                 def newWorkspaceDir = "/opt/docker-green/Stackhawk/workspace"
                 sh """
                 ssh -o StrictHostKeyChecking=no ab@host.docker.internal '
                 mkdir -p ${newWorkspaceDir} && \\
                 rm -rf ${newWorkspaceDir}/* && \\
-                cp -r /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main/* ${newWorkspaceDir}/
-                cp /opt/docker-green/Stackhawk/stackhawk.yml ${newWorkspaceDir}/'
-
+                cp -r /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main/* ${newWorkspaceDir}/'
                 """
-                // Step 2.1: Delete existing custom StackHawk Docker image
-                sh """
-                ssh -o StrictHostKeyChecking=no ab@host.docker.internal \\
-                'docker rmi -f stackhawk-custom:latest || true'
-                """
-                // Step 2.2: Build the custom StackHawk Docker image
+                // Build the custom StackHawk Docker image using the selected Dockerfile and include the branch name or environment in the tag
+                def imageName = "stackhawk-custom:${environment.toLowerCase()}"
                 sh """
                 ssh -o StrictHostKeyChecking=no ab@host.docker.internal \\
                 'cd /opt/docker-green/Stackhawk && \\
-                docker build -f stackhawk.Dockerfile -t stackhawk-custom:latest .'
+                docker build -f ${dockerfilePath} -t ${imageName} .'
                 """
-
-                // Define a unique container name to avoid conflicts
                 def containerName = "stackhawk_scan_${BUILD_NUMBER}"
-
-                // Adjusted volume mapping to use the new directory
                 def volumeMapping = "${newWorkspaceDir}:/hawk:rw"
-
-                // Step 3: SSH into the Docker host to run the StackHawk scan with the new volume mapping
+                // Run the StackHawk scan with the new volume mapping using the specific image name
                 sh """
                 ssh -o StrictHostKeyChecking=no ab@host.docker.internal \\
                 'docker rm -f ${containerName} || true && \\
                 docker run --rm --name ${containerName} \\
                 -v ${volumeMapping} \\
                 -e HOST="${env.STACKHAWK_HOST}" \\
-                -e ENVIRONMENT="${env.STACKHAWK_ENV}" \\
-                stackhawk-custom:latest'
+                -e ENVIRONMENT="${environment}" \\
+                ${imageName}'
                 """
             }
         }
