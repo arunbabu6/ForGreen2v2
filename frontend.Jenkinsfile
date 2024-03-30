@@ -267,28 +267,37 @@ pipeline {
         }
     
 
-    stage('Setup StackHawk Scan') {
-        steps {
-            script {
-                // Build the Docker image
-                sh "docker build -f /opt/docker-green/Stackhawk/stackhawk.Dockerfile -t stackhawk-custom:latest /opt/docker-green/Stackhawk/"
+        stage('Setup StackHawk Scan') {
+            steps {
+                script {
+                    // SSH into the Docker host to build the custom StackHawk Docker image
+                    sshagent(['jenkinaccess']) {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no ab@Staging-host.docker.internal '
+                        'cd /opt/docker-green/Stackhawk && \
+                        docker build -f stackhawk.Dockerfile -t stackhawk-custom:latest .'
+                        """
+                    }
 
-                // Define a unique container name to avoid conflicts
-                def containerName = "stackhawk_scan_${BUILD_NUMBER}"
+                    // Define a unique container name to avoid conflicts
+                    def containerName = "stackhawk_scan_${BUILD_NUMBER}"
 
-                // Run the StackHawk scan with HOST and ENVIRONMENT variables, ensuring the container is removed afterwards
-                sh """
-                    docker rm -f ${containerName} || true
-                    docker run --rm --name ${containerName} \\
-                    -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \\
-                    -e HOST='${env.STACKHAWK_HOST}' \\
-                    -e ENVIRONMENT='${env.STACKHAWK_ENV}' \\
-                    stackhawk-custom:latest
-                """
+                    // SSH into the Docker host to run the StackHawk scan
+                    sshagent(['jenkinaccess']) {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no dockerhost_username@docker_host_address \
+                        'docker rm -f ${containerName} || true && \
+                        docker run --rm --name ${containerName} \
+                        -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \
+                        -e HOST="${env.STACKHAWK_HOST}" \
+                        -e ENVIRONMENT="${env.STACKHAWK_ENV}" \
+                        stackhawk-custom:latest'
+                        """
+                    }
+                }
             }
         }
     }
-}
 
     post {
         always {
@@ -304,3 +313,5 @@ pipeline {
         }
     }
 }
+
+
