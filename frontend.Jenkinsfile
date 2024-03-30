@@ -274,18 +274,23 @@ pipeline {
                 // Using sshagent to securely access the Docker host
                 sshagent(['jenkinaccess']) { 
                     echo "Starting StackHawk scan for ${env.STACKHAWK_HOST}"
-                // Running StackHawk scan command on Docker host through SSH
-                sh """
-                ssh -o StrictHostKeyChecking=no ab@host.docker.internal '
-                    docker run --rm \\
-                    -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \\
-                    -e API_KEY=\"${env.STACKHAWK_API_KEY}\" \\
-                    -e HOST=\"${env.STACKHAWK_HOST}\" \\
-                    -e APP_ID=\"${env.STACKHAWK_APP_ID}\" \\
-                    -e ENVIRONMENT=\"${env.STACKHAWK_ENV}\" \\
+                    // Define a script block to export variables and run the Docker command
+                    def scancommand = """
+                    export API_KEY='${env.STACKHAWK_API_KEY}' &&
+                    export HOST='${env.STACKHAWK_HOST}' &&
+                    export APP_ID='${env.STACKHAWK_APP_ID}' &&
+                    export ENVIRONMENT='${env.STACKHAWK_ENV}' &&
+                    docker run --rm \
+                    -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \
+                    -e API_KEY=\\$API_KEY \
+                    -e HOST=\\$HOST \
+                    -e APP_ID=\\$APP_ID \
+                    -e ENVIRONMENT=\\$ENVIRONMENT \
                     stackhawk/hawkscan:latest
-                '
-                """
+                    """
+
+                // Execute the script block within the SSH session
+                sh "ssh -o StrictHostKeyChecking=no ab@host.docker.internal '${scancommand}'"
 
                 }
             }
