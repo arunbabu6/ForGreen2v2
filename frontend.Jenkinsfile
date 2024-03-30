@@ -273,7 +273,7 @@ pipeline {
                     // SSH into the Docker host to build the custom StackHawk Docker image
                     sshagent(['jenkinaccess']) {
                         sh """
-                        ssh -o StrictHostKeyChecking=no ab@Staging-host.docker.internal '
+                        ssh -o StrictHostKeyChecking=no ab@host.docker.internal '
                         'cd /opt/docker-green/Stackhawk && \
                         docker build -f stackhawk.Dockerfile -t stackhawk-custom:latest .'
                         """
@@ -285,7 +285,7 @@ pipeline {
                     // SSH into the Docker host to run the StackHawk scan
                     sshagent(['jenkinaccess']) {
                         sh """
-                        ssh -o StrictHostKeyChecking=no dockerhost_username@docker_host_address \
+                        ssh -o StrictHostKeyChecking=no ab@host.docker.internal \
                         'docker rm -f ${containerName} || true && \
                         docker run --rm --name ${containerName} \
                         -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \
