@@ -267,39 +267,28 @@ pipeline {
         }
     
 
-    stage('StackHawk Scan') {
-    agent any
-    steps {
-        script {
-            // Define credentials and environment variables
-            withCredentials([
-                string(credentialsId: 'STACKHAWK_API_KEY', variable: 'API_KEY'),
-                string(credentialsId: 'STACKHAWK_APP_ID', variable: 'APP_ID')
-            ]) {
-                // Define a Docker container name for ease of management
-                def containerName = "stackhawk_scan"
+    stage('Setup StackHawk Scan') {
+        steps {
+            script {
+                // Build the Docker image
+                sh "docker build -f /opt/docker-green/Stackhawk/stackhawk.Dockerfile -t stackhawk-custom:latest /opt/docker-green/Stackhawk/"
 
-                // Command to remove an existing container if it exists
-                def removeContainerCommand = "docker rm -f ${containerName} || true"
+                // Define a unique container name to avoid conflicts
+                def containerName = "stackhawk_scan_${BUILD_NUMBER}"
 
-                // Docker run command with environment variables set directly
-                def dockerRunCommand = """
-                    docker run --rm --name ${containerName} \
-                    -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \
-                    -e API_KEY='${API_KEY}' \
-                    -e HOST='${env.STACKHAWK_HOST}' \
-                    -e APP_ID='${APP_ID}' \
-                    -e ENVIRONMENT='${env.STACKHAWK_ENV}' \
-                    stackhawk/hawkscan:latest
+                // Run the StackHawk scan with HOST and ENVIRONMENT variables, ensuring the container is removed afterwards
+                sh """
+                    docker rm -f ${containerName} || true
+                    docker run --rm --name ${containerName} \\
+                    -v /home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw \\
+                    -e HOST='${env.STACKHAWK_HOST}' \\
+                    -e ENVIRONMENT='${env.STACKHAWK_ENV}' \\
+                    stackhawk-custom:latest
                 """
-
-                // Execute the SSH command to run on the Docker host
-                sh "ssh -o StrictHostKeyChecking=no ab@host.docker.internal '${removeContainerCommand} && ${dockerRunCommand}'"
             }
         }
     }
 }
-    }
 
     post {
         always {
@@ -315,5 +304,3 @@ pipeline {
         }
     }
 }
-
-
