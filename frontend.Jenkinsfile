@@ -284,7 +284,7 @@ pipeline {
             def containerName = "stackhawk_scan_${BUILD_NUMBER}"
 
             // Adjusted volume mapping for WSL and Jenkins running in Docker
-            def volumeMapping = "/home/ab/jenkins/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw"
+            def volumeMapping = "/home/ab/jenkins/jenkins-data/Project_Green/v2/new_jenkins_home/workspace/Green2v2-frontend_main:/hawk:rw"
 
             // SSH into the Docker host to run the StackHawk scan with adjusted volume mapping
             sshagent(['jenkinaccess']) {
@@ -317,3 +317,5 @@ pipeline {
         }
     }
 }
+
+
