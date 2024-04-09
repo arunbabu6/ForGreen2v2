@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGEE = 'arunthopil/pro-green-v2' // Corrected variable name
-        SONARQUBE_TOKEN = credentials('sonar-docker')
+        SONARQUBE_TOKEN = credentials('sonar-aws')
         DOCKERHUB_CREDENTIALS = credentials('dockerhub1')
         MONGO_URI = credentials('MONGO_URI')
         // SSH credentials for each environment
@@ -121,7 +121,7 @@ pipeline {
                 withSonarQubeEnv('Sonarqube') { // 'Sonarcube-cred' from |should match the SonarQube configuration in Jenkins
                     sh """
                       sonar-scanner \
-                      -Dsonar.projectKey=Project-Green2-Backend \
+                      -Dsonar.projectKey=ProjectGreenBackend-Production \
                       -Dsonar.sources=. \
                       -Dsonar.host.url=http://172.19.0.4:9000/ \
                       -Dsonar.login=$SONARQUBE_TOKEN
